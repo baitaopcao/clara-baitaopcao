@@ -17,7 +17,7 @@
       appendMessage('Você: ' + text);
       e.target.value = '';
 
-      const res = await fetch('https://clara-baitaopcao-git-main-baita-opcao.vercel.app/', {
+      const res = await fetch('https://clara-baitaopcao-git-main-baita-opcao.vercel.app/api/chat', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ history })
