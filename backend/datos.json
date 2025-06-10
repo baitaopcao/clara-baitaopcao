@@ -1,6 +1,33 @@
 {
-  "intro": "Somos a Baita Opção, uma loja de moda com foco em qualidade, bom atendimento e preços acessíveis.",
-  "faq": "Frete grátis para todo o Brasil. Trocas até 7 dias. Parcelamento em até 12x (3x sem juros).",
-  "contact": "WhatsApp: (11) 96622-5187 | Email: atendimento@baitaopcao.com | Atendimento: Seg-Sab das 9h às 18h.",
-  "products": "Moda feminina, masculina e infantil. Temos vestidos, camisas, calçados, conjuntos e muito mais."
+  "intro": "A Baita Opção é uma loja online especializada em roupas para o dia a dia, oferecendo produtos de qualidade com ótimo preço e entrega para todo o Brasil.",
+
+  "faq": [
+    {
+      "pergunta": "O frete é grátis?",
+      "resposta": "Sim. A Baita Opção oferece frete grátis para todo o Brasil."
+    },
+    {
+      "pergunta": "Posso parcelar minhas compras?",
+      "resposta": "Claro. Oferecemos parcelamento em até 12x no cartão, sendo que suas 3 primeiras parcelas serão sem juros."
+    },
+    {
+      "pergunta": "Se eu não gostar da compra, posso trocar?",
+      "resposta": "Sim, você terá o prazo de 7 dias para entrar em contato conosco por telefone ou e-mail."
+    },
+    {
+      "pergunta": "Qual o prazo para entrega?",
+      "resposta": "O prazo de entrega é de 4 a 11 dias úteis, dependendo do local da entrega."
+    },
+    {
+      "pergunta": "Como posso entrar em contato com a loja?",
+      "resposta": "Você pode nos contatar pelo WhatsApp: (11) 96622-5187 ou pelo e-mail: atendimento@baitaopcao.com."
+    }
+  ],
+
+  "contact": {
+    "telefone": "(11) 96622-5187",
+    "email": "atendimento@baitaopcao.com",
+    "whatsapp": "https://wa.me/5511966225187"
+  },
+
 }
