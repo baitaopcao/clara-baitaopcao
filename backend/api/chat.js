@@ -1,37 +1,34 @@
 const { OpenAI } = require("openai");
 const knowledge = require("../datos.json");
 
-// Verifica se a variável de ambiente está definida
-if (!process.env.OPENAI_API_KEY) {
-  console.error("ERRO: OPENAI_API_KEY não está definida.");
-}
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 module.exports = async function handler(req, res) {
-  try {
-    const { history } = req.body;
+  // Garante que a requisição é POST
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Método não permitido" });
+  }
 
-    if (!history || !Array.isArray(history)) {
-      return res.status(400).json({ error: "Histórico inválido" });
+  try {
+    const body = req.body;
+
+    if (!body || !body.history) {
+      return res.status(400).json({ error: "Corpo da requisição inválido. 'history' é obrigatório." });
     }
 
-    console.log("Recebido history:", history);
+    const { history } = body;
 
     const systemPrompt = `
 Você é a Clara, assistente virtual da loja Baita Opção.
-Fale de forma informal, amigável, e ajude os clientes com dúvidas sobre produtos, frete, trocas e mais.
-
-Informações da loja:
+Fale de forma informal, amigável, e ajude os clientes com dúvidas sobre os produtos, frete, trocas e mais.
+Aqui estão informações importantes sobre a loja:
 ${knowledge.intro}
-
 FAQ:
 ${JSON.stringify(knowledge.faq, null, 2)}
-
 Contatos:
 ${JSON.stringify(knowledge.contact, null, 2)}
+Produtos:
+${JSON.stringify(knowledge.products || [], null, 2)}
     `;
 
     const messages = [
@@ -41,17 +38,12 @@ ${JSON.stringify(knowledge.contact, null, 2)}
 
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
-      messages
+      messages,
     });
 
-    const resposta = completion.choices[0].message.content;
-    console.log("Resposta da Clara:", resposta);
-
-    res.json({ reply: resposta });
+    res.json({ reply: completion.choices[0].message.content });
   } catch (err) {
     console.error("Erro no Chat:", err);
-    res.status(500).json({
-      error: err.message || "Erro no chat da Clara."
-    });
+    res.status(500).json({ error: "Erro no chat da Clara." });
   }
 };
