@@ -1,0 +1,35 @@
+#clara-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 300px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-family: sans-serif;
+  z-index: 9999;
+}
+
+#clara-header {
+  background: #007bff;
+  color: #fff;
+  padding: 10px;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  font-weight: bold;
+}
+
+#clara-body {
+  height: 200px;
+  overflow-y: auto;
+  padding: 10px;
+  font-size: 14px;
+}
+
+#clara-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  border: none;
+  border-top: 1px solid #ccc;
+}
