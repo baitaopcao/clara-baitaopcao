@@ -1,0 +1,23 @@
+{
+  "name": "clara-baitaopcao",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baitaopcao/clara-baitaopcao.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/baitaopcao/clara-baitaopcao/issues"
+  },
+  "homepage": "https://github.com/baitaopcao/clara-baitaopcao#readme",
+  "description": "",
+  "dependencies": {
+    "openai": "^5.3.0"
+  }
+}
