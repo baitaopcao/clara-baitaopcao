@@ -1,9 +1,9 @@
-import { OpenAI } from "openai";
-import knowledge from '../datos.json';
+const { OpenAI } = require("openai");
+const knowledge = require("../datos.json");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { history } = req.body;
 
   const systemPrompt = `
@@ -35,4 +35,4 @@ ${knowledge.products}
     console.error("Erro no Chat:", err);
     res.status(500).json({ error: "Erro no chat da Clara." });
   }
-}
+};
