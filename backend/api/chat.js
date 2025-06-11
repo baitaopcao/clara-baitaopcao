@@ -1,59 +1,75 @@
 const { OpenAI } = require("openai");
-const knowledge = require("../datos.json") || defaultKnowledge;
 
-const openai = new OpenAI({ 
+// Carregue os dados com fallback seguro
+let knowledge = { intro: "", faq: [], contact: {}, products: [] };
+try {
+  knowledge = require("../datos.json");
+} catch (e) {
+  console.warn("⚠️ Não foi possível carregar datos.json, usando dados padrão");
+}
+
+// Configure a OpenAI com timeout
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  timeout: 10000
+  timeout: 15000 // 15 segundos
 });
 
-// Middleware CORS completo
-const setCorsHeaders = (res) => {
+module.exports = async function handler(req, res) {
+  // Configuração robusta de CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS, GET");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader("Access-Control-Max-Age", "86400");
-};
 
-module.exports = async function handler(req, res) {
-  setCorsHeaders(res);
-  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Método não permitido" });
+  }
 
   try {
-    console.log("📥 Request received:", req.method, req.url);
-
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Método não permitido" });
+    console.log("🔍 Recebendo requisição...");
+    
+    if (!req.body || !req.body.history) {
+      throw new Error("Corpo da requisição inválido");
     }
 
-    if (!req.body || !Array.isArray(req.body.history)) {
-      return res.status(400).json({ error: "Body inválido" });
-    }
+    const history = Array.isArray(req.body.history) ? req.body.history : [];
 
-    const systemPrompt = `Você é a Clara, assistente da Baita Opção (${knowledge.intro}). 
-    Responda de forma amigável e objetiva. Dados: ${JSON.stringify(knowledge)}`;
+    const systemMessage = {
+      role: "system",
+      content: `Você é a Clara, assistente virtual da Baita Opção.
+      Responda de forma amigável e objetiva.
+      Informações da loja: ${JSON.stringify(knowcraft)}`
+    };
 
-    const response = await openai.chat.completions.create({
+    const messages = [systemMessage, ...history];
+    console.log("📤 Enviando para OpenAI:", JSON.stringify(messages, null, 2));
+
+    const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...req.body.history
-      ]
+      messages,
+      temperature: 0.7,
+      max_tokens: 500
     });
 
-    return res.status(200).json({ 
-      reply: response.choices[0].message.content 
-    });
+    const resposta = completion.choices[0]?.message?.content;
+    console.log("✅ Resposta recebida:", resposta);
 
-  } catch (err) {
-    console.error("💥 ERRO:", {
-      message: err.message,
-      stack: err.stack,
+    return res.status(200).json({ reply: resposta });
+    
+  } catch (error) {
+    console.error("💥 ERRO CRÍTICO:", {
+      message: error.message,
+      stack: error.stack,
       timestamp: new Date().toISOString()
     });
-    
+
     return res.status(500).json({ 
-      error: "Desculpe, Clara está tendo problemas técnicos",
-      requestId: req.headers['x-vercel-id'] 
+      error: "Desculpe, Clara está temporariamente indisponível",
+      details: process.env.NODE_ENV === "development" ? error.message : undefined
     });
   }
 };
