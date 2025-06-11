@@ -19,11 +19,13 @@
       e.target.value = '';
 
       try {
-        const res = await fetch('https://clara-baitaopcao-git-main-baita-opcao.vercel.app/api/chat', {
+        // Usando URL relativa aqui!
+        const res = await fetch('/api/chat', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ history })
         });
+
         console.log('Resposta da API:', res);
 
         if (!res.ok) {
