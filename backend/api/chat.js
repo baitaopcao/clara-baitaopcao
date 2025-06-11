@@ -12,28 +12,36 @@ const config = {
 const logger = {
   log: (message) => {
     console.log(message);
-    fs.appendFileSync(config.logFile, `[LOG] ${new Date().toISOString()} ${message}\n`);
+    try {
+      fs.appendFileSync(config.logFile, `[LOG] ${new Date().toISOString()} ${message}\n`);
+    } catch (e) {
+      console.error("Erro ao salvar log:", e);
+    }
   },
   error: (error) => {
-    console.error(error.stack || error.message || String(error));
-    fs.appendFileSync(config.logFile, `[ERROR] ${new Date().toISOString()} ${error.stack || error.message || String(error)}\n`);
+    const msg = error.stack || error.message || String(error);
+    console.error(msg);
+    try {
+      fs.appendFileSync(config.logFile, `[ERROR] ${new Date().toISOString()} ${msg}\n`);
+    } catch (e) {
+      console.error("Erro ao salvar log:", e);
+    }
   }
 };
 
 module.exports = async (req, res) => {
-  // Configuração CORS
-  const allowedOrigin = "https://clara-baitaopcao.vercel.app";
-  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  // CORS liberado temporariamente para teste
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // Responder OPTIONS preflight
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
 
   try {
     logger.log(`Nova requisição: ${req.method} ${req.url}`);
+    logger.log(`OPENAI_API_KEY set? ${process.env.OPENAI_API_KEY ? "sim" : "não"}`);
 
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("Variável OPENAI_API_KEY não configurada");
@@ -53,16 +61,24 @@ module.exports = async (req, res) => {
       req.on("error", reject);
     });
 
-    logger.log(`Corpo recebido: ${JSON.stringify(body)}`);
+    logger.log(`Corpo recebido: ${JSON.stringify(body, null, 2)}`);
 
-    if (!Array.isArray(body.history)) {
+    // Para testar, você pode usar um histórico fixo:
+    // const history = [
+    //   { role: "system", content: "Você é um assistente útil." },
+    //   { role: "user", content: "Olá, tudo bem?" }
+    // ];
+    // Ou use o que chegou:
+    const history = Array.isArray(body.history) ? body.history : null;
+    if (!history) {
       return res.status(400).json({ error: "Formato inválido: history deve ser um array" });
     }
 
     const openai = new OpenAI(config.openai);
+
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo-0125",
-      messages: body.history,
+      messages: history,
       temperature: 0.7
     });
 
@@ -80,7 +96,7 @@ module.exports = async (req, res) => {
 
     const errorResponse = {
       error: "Erro interno",
-      requestId: req.headers["x-vercel-id"],
+      requestId: req.headers["x-vercel-id"] || null,
       timestamp: new Date().toISOString()
     };
 
