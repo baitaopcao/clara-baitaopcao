@@ -1,75 +1,81 @@
 const { OpenAI } = require("openai");
+const fs = require("fs");
 
-// Carregue os dados com fallback seguro
-let knowledge = { intro: "", faq: [], contact: {}, products: [] };
-try {
-  knowledge = require("../datos.json");
-} catch (e) {
-  console.warn("⚠️ Não foi possível carregar datos.json, usando dados padrão");
-}
+// Configuração com fallback seguro
+const config = {
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY || "default_invalid_key",
+    timeout: 30000 // 30 segundos
+  },
+  logFile: "/tmp/chat_errors.log"
+};
 
-// Configure a OpenAI com timeout
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  timeout: 15000 // 15 segundos
-});
-
-module.exports = async function handler(req, res) {
-  // Configuração robusta de CORS
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Max-Age", "86400");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+// Sistema de logging robusto
+const logger = {
+  log: (message) => {
+    console.log(message);
+    fs.appendFileSync(config.logFile, `[LOG] ${new Date().toISOString()} ${message}\n`);
+  },
+  error: (error) => {
+    console.error(error);
+    fs.appendFileSync(config.logFile, `[ERROR] ${new Date().toISOString()} ${error.stack || error.message}\n`);
   }
+};
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Método não permitido" });
-  }
-
+module.exports = async (req, res) => {
   try {
-    console.log("🔍 Recebendo requisição...");
+    logger.log(`Nova requisição: ${req.method} ${req.url}`);
     
-    if (!req.body || !req.body.history) {
-      throw new Error("Corpo da requisição inválido");
+    // Verificação do ambiente
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("Variável OPENAI_API_KEY não configurada");
     }
 
-    const history = Array.isArray(req.body.history) ? req.body.history : [];
+    // Processamento do corpo da requisição
+    const body = await new Promise((resolve) => {
+      let data = "";
+      req.on("data", chunk => data += chunk);
+      req.on("end", () => resolve(JSON.parse(data || "{}")));
+    });
 
-    const systemMessage = {
-      role: "system",
-      content: `Você é a Clara, assistente virtual da Baita Opção.
-      Responda de forma amigável e objetiva.
-      Informações da loja: ${JSON.stringify(knowcraft)}`
+    logger.log(`Corpo recebido: ${JSON.stringify(body)}`);
+
+    // Validação
+    if (!Array.isArray(body.history)) {
+      return res.status(400).json({ error: "Formato inválido: history deve ser um array" });
+    }
+
+    // Chamada à OpenAI
+    const openai = new OpenAI(config.openai);
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo-0125",
+      messages: body.history,
+      temperature: 0.7
+    });
+
+    const resposta = completion.choices[0].message.content;
+    logger.log(`Resposta gerada: ${resposta.substring(0, 50)}...`);
+
+    return res.json({ reply: resposta });
+
+  } catch (error) {
+    logger.error(error);
+    
+    // Resposta detalhada em desenvolvimento
+    const errorResponse = {
+      error: "Erro interno",
+      requestId: req.headers['x-vercel-id'],
+      timestamp: new Date().toISOString()
     };
 
-    const messages = [systemMessage, ...history];
-    console.log("📤 Enviando para OpenAI:", JSON.stringify(messages, null, 2));
+    if (process.env.NODE_ENV !== "production") {
+      errorResponse.details = {
+        message: error.message,
+        stack: error.stack,
+        raw: error
+      };
+    }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages,
-      temperature: 0.7,
-      max_tokens: 500
-    });
-
-    const resposta = completion.choices[0]?.message?.content;
-    console.log("✅ Resposta recebida:", resposta);
-
-    return res.status(200).json({ reply: resposta });
-    
-  } catch (error) {
-    console.error("💥 ERRO CRÍTICO:", {
-      message: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString()
-    });
-
-    return res.status(500).json({ 
-      error: "Desculpe, Clara está temporariamente indisponível",
-      details: process.env.NODE_ENV === "development" ? error.message : undefined
-    });
+    return res.status(500).json(errorResponse);
   }
 };
