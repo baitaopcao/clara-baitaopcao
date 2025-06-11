@@ -19,7 +19,8 @@
       e.target.value = '';
 
       try {
-        // Usando URL relativa aqui!
+        console.log("Enviando histórico:", history);
+
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
